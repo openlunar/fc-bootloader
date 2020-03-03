@@ -4,7 +4,7 @@
 #include "command.h"
 #include "sll.h"
 
-#include "rh71_usart.h"
+#include "usart.h"
 
 // Global frame instance used to send responses
 static uint8_t sll_buffer_g[SLL_MAX_MSG_LEN];

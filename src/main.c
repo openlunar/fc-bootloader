@@ -1,13 +1,21 @@
 
+// Project common headers
 #include "config.h"
 #include "common.h"
-#include "vector.h"
-#include "rh71_pio.h"
-#include "rh71_usart.h"
-#include "rh71_flash.h"
+
+// Portable headers
 #include "sll.h"
 #include "command.h"
 
+// Architecture headers
+#include "vector.h"
+
+// SoC headers
+#include "usart.h"
+#include "rh71_pio.h"
+#include "rh71_flash.h"
+
+// Standard / system headers
 #include <stdint.h>
 
 // TODO: Move vector table and start-up code into arch/arm
@@ -90,9 +98,11 @@ void __attribute__((naked)) reset_handler()
 // 	__asm__("BX		r1"); // Branch to application entry point, RH passed in RH
 // }
 
+// TODO: Move into WDT header
 #define WDT_BASE	0x40100250
 #define WDT_MR		MMIO32((WDT_BASE) + 0x04)
 
+// TODO: Move into RTC header
 // #define RTC_BASE	0x400E1860
 // #define RTC_TIMR	MMIO32((RTC_BASE) + 0x08)
 

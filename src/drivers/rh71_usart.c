@@ -1,9 +1,15 @@
 
-#include "rh71_usart.h"
+#include "usart.h"
+
 #include "rh71_pio.h"
 #include "rh71_pmc.h"
 #include "common.h"
 // #include "v71_pio.h"
+
+// USART dependencies:
+// - PIO : Configure pin as USART function
+// - PMC : Enable peripheral clock; (eventually) know system clock so baud clock divisor can be calculated
+// - (Potentially; definitely in application) Vector table access (install interrupt handlers)
 
 // PF29 - FLEXCOM1_IO1 - TXD (RXD)
 // PF30 - FLEXCOM1_IO0 - RXD (TXD)

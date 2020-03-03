@@ -27,12 +27,19 @@ ARMGNU := arm-none-eabi
 link_script := ${builddir}/link.ld
 
 tgt_srcs := src/main.c
-tgt_srcs += src/arch/arm/vector.c
-tgt_srcs += src/drivers/rh71_usart.c
-tgt_srcs += src/drivers/rh71_flash.c
 tgt_srcs += src/common/sll.c
 tgt_srcs += src/common/crc.c
 tgt_srcs += src/common/command.c
+
+# Sources to be included based on target architecture (e.g. ARM)
+tgt_srcs += src/arch/arm/vector.c
+
+# Sources to be included based on target processor (e.g. SAMV71)
+tgt_srcs += src/drivers/rh71_flash.c
+tgt_srcs += src/drivers/rh71_usart.c
+
+# Sources to be included based on target board (e.g. SAMRH71-EK)
+# ...
 
 tgt_cppflags := -g
 tgt_cppflags += -Wall -Wextra
