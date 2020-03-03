@@ -25,7 +25,9 @@ typedef enum {
 	// -- Debug Commands ---------------------------------------------------- //
 	// Debug commands have 3 MSB set
 	CMD_BL_VERB_DBG_WRITE_TO_RAM = 0xE1,
-	CMD_BL_VERB_DBG_COMMIT_PAGE = 0xE2
+	CMD_BL_VERB_DBG_COMMIT_PAGE = 0xE2,
+	CMD_BL_VERB_DBG_ERASE_RANGE = 0xE3,
+	CMD_BL_VERB_DBG_JUMP_TO_ADDR = 0xE4
 } cmd_bl_verb_t;
 
 typedef enum {

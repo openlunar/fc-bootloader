@@ -1,20 +1,31 @@
 
+#include "command.h"
+
 #include "config.h"
 
-#include "command.h"
+#include "crc.h"
 #include "sll.h"
 
 #include "usart.h"
 
+#include "rh71_flash.h"
+
 // Global frame instance used to send responses
 static uint8_t sll_buffer_g[SLL_MAX_MSG_LEN];
+
+// Global page buffer
+static uint8_t page_buffer_g[CONFIG_PAGE_SIZE];
 
 // TODO:
 // - This internally should be split into a "command parsing" and "command execution" phase
 
 int _write_ram( uint8_t * msg );
 
-int _write_page_buffer( uint8_t * msg, uint8_t * page_buffer );
+int _write_page_buffer( uint8_t * msg );
+
+int _dbg_write_page( uint8_t * msg );
+
+int _dbg_erase_range( uint8_t * msg );
 
 int cmd_exe( uint8_t * data, uint8_t len )
 {
@@ -42,22 +53,31 @@ int cmd_exe( uint8_t * data, uint8_t len )
 	switch ( verb ) {
 	// -- Production Commands ----------------------------------------------- //
 		case CMD_BL_VERB_PING:
-			cmd_resp( CMD_BL_VERB_PING, CMD_RESP_ACK );
+			// cmd_resp( CMD_BL_VERB_PING, CMD_RESP_ACK );
 			break;
 		case CMD_BL_VERB_WRITE_TO_PAGE_BUFFER:
+			ret = _write_page_buffer( data );
 			break;
 	// -- Debug Commands ---------------------------------------------------- //
 		case CMD_BL_VERB_DBG_WRITE_TO_RAM:
 			ret = _write_ram( data );
 			break;
 		case CMD_BL_VERB_DBG_COMMIT_PAGE:
-			// rh71_flash_write_page( page_buffer, 0 );
-			// break;
+			ret = _dbg_write_page( data );
+			break;
+		case CMD_BL_VERB_DBG_ERASE_RANGE:
+			ret = _dbg_erase_range( data );
+			break;
+		case CMD_BL_VERB_DBG_JUMP_TO_ADDR:
+			// The only argument is the address to jump to; assume first word at this address is the new SP value
+			ret = (data[2] << 24) | (data[3] << 16) | (data[4] << 8) | (data[5]);
+			break;
 		default:
 			ret = (-1);
 	}
 
-	if ( ret ) {
+	// TODO: Ok this is a bit hacky - I'm going to positive values as the "exit and boot" return value; the flash starts at 0x10000000 so it's always a positive value; this lets me return the address to branch to
+	if ( ret < 0 ) {
 		cmd_resp( verb, CMD_RESP_NACK );
 	} else {
 		cmd_resp( verb, CMD_RESP_ACK );
@@ -102,7 +122,7 @@ int _write_ram( uint8_t * msg )
 	return 0;
 }
 
-int _write_page_buffer( uint8_t * msg, uint8_t * page_buffer )
+int _write_page_buffer( uint8_t * msg )
 {
 	// arg0: byte offset (u16)
 	// arg1: length (u8)
@@ -128,11 +148,52 @@ int _write_page_buffer( uint8_t * msg, uint8_t * page_buffer )
 
 	uint16_t page_idx;
 	for ( page_idx = offset; page_idx < (offset + length); page_idx++ ) {
-		page_buffer[page_idx] = *data; // Write data to page
+		page_buffer_g[page_idx] = *data; // Write data to page
 		data++; // Increment data index
 	}
 
 	return 0;
+}
+
+// This is the debug-version of the "commit_page" command - there are no restrictions on what pages can be written
+int _dbg_write_page( uint8_t * msg )
+{
+	// arg0: page number (u16)
+	// arg1: page CRC-32 (u32)
+	uint16_t page_no = (msg[2] << 8) | msg[3];
+	// Probably want a utility for unpacking values in different endianness (actually this is probably where protobuf / cap'n'proto comes in)
+	uint32_t page_crc = (msg[4] << 24) | (msg[5] << 16) | (msg[6] << 8) | (msg[7]);
+
+	// Validate page_no doesn't exceed flash size
+	// TODO: Magic number for RH71
+	if ( page_no > 512 ) {
+		return (-1);
+	}
+
+	// Verify page CRC against buffer
+	uint32_t buffer_crc = crc_32( page_buffer_g, CONFIG_PAGE_SIZE );
+
+	if ( page_crc != buffer_crc ) {
+		return (-1);
+	}
+
+	// commit_page_buffer( )
+	// TODO: Remove dependency on "rh71"
+	rh71_flash_write_page( page_buffer_g, page_no );
+
+	return 0;
+}
+
+// NOTE: I'm writing this specifically for the RH71 for now so it's going to be based on page number (the RH71 has erase granularity at the page level)
+int _dbg_erase_range( uint8_t * msg )
+{
+	// arg0: page_start (u16)
+	// arg1: page_end (u16)
+	uint16_t page_start = (msg[2] << 8) | msg[3];
+	uint16_t page_end = (msg[4] << 8) | msg[5];
+
+	// NOTE: Being lazy - this function validates the arguments
+	return rh71_flash_erase_range( page_start, page_end );
 }
 
 int cmd_resp( cmd_bl_verb_t verb, cmd_resp_t resp )

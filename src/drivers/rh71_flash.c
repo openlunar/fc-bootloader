@@ -178,6 +178,41 @@ int rh71_flash_init()
 	return 0;
 }
 
+int rh71_flash_erase_range( uint16_t page_start, uint16_t page_end )
+{
+	// TODO: RH71 magic number
+	if ( (page_start > 512) || (page_end > 512) ) {
+		return (-1);
+	}
+
+	if ( page_end < page_start ) {
+		return (-1);
+	}
+
+	// TODO: Be more clever about usage of EP vs EPA for page ranges
+
+	uint32_t fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD) | HEFC_FCR_FCMD(HEFC_CMD_EP);
+	uint32_t fsr;
+	
+	for ( ; page_start <= page_end; page_start++ ) {
+		fcr &= ~HEFC_FCR_FARG_MASK; // Clear page argument
+		fcr |= HEFC_FCR_FARG( page_start ); // Set page argument
+
+		// Write command to command register
+		HEFC_FCR = fcr;
+
+		// Wait for erase to complete (HEFC_FSR.FRDY)
+		while ( ! ((fsr = HEFC_FSR) & HEFC_FSR_FRDY) );
+
+		// fsr &= (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR);
+		if ( fsr & (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR) ) {
+			return (-fsr); // Some error occurred during the operation
+		}
+	}
+
+	return 0;
+}
+
 int rh71_flash_erase_app()
 {
 	// TODO: Check that the page isn't already erased

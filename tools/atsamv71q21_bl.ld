@@ -14,8 +14,14 @@ MEMORY
 {
 	/*rom (rx) : ORIGIN = 0x21000000, LENGTH = 0x00001000*/
 	/*ram (rwx) : ORIGIN = 0x21001000, LENGTH = 0x00004000*/
+#if defined(CONFIG_RAM_BUILD)
 	rom  (rx) : ORIGIN = CONFIG_SYS_TEXT_BASE, LENGTH = 0x1000
 	ram (rwx) : ORIGIN = (CONFIG_SYS_TEXT_BASE + 0x1000), LENGTH = 0x4000
+#else
+	rom  (rx) : ORIGIN = CONFIG_SYS_TEXT_BASE, LENGTH = 0x1000
+	/* TODO: Need a constant for RAM base */
+	ram (rwx) : ORIGIN = 0x21000000, LENGTH = 0x4000
+#endif
 }
 
 /* The stack size used by the application. NOTE: you need to adjust according to your application. */

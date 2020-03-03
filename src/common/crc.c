@@ -1,6 +1,8 @@
 
 #include "crc.h"
 
+// TODO: May want to provide the option to calculate these tables at run-time and store them in RAM; this would reduce binary size quite a bit which would (possibly) be useful for the bootloader (1.5 K is just tables right now)
+
 // Pre-calculated CRC16 table for CRC16-ANSI
 // Probably want to force this into .text section
 static const uint16_t crc_16ansi_table_g[256] = {
@@ -115,4 +117,26 @@ uint16_t crc_16ibm_update( uint16_t crc, uint8_t data )
 uint32_t crc_32_update( uint32_t crc, uint8_t data )
 {
 	return ((crc >> 8) ^ crc_32_table_g[(crc ^ (uint32_t)data) & 0xFF]);
+}
+
+uint32_t crc_32_finalize( uint32_t crc )
+{
+	return (crc ^ 0xFFFFFFFFUL);
+}
+
+uint32_t crc_32( uint8_t * data, uint32_t len )
+{
+	uint32_t crc = CRC_32_INIT_VALUE;
+	uint32_t i;
+
+	// TODO: Is this how we want to handle NULL data pointers (?)
+	if ( ! data ) {
+		return crc;
+	}
+
+	for ( i = 0; i < len; i++ ) {
+		crc = crc_32_update( crc, data[i] );
+	}
+
+	return crc_32_finalize( crc );
 }

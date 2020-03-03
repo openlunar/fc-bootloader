@@ -37,6 +37,13 @@ tgt_srcs += src/arch/arm/vector.c
 # Sources to be included based on target processor (e.g. SAMV71)
 tgt_srcs += src/drivers/rh71_flash.c
 tgt_srcs += src/drivers/rh71_usart.c
+# tgt_srcs-${CONFIG_SOC_RH71} += src/drivers/rh71_usart.c
+# $(call tgt_src_ifdef, CONFIG_SOC_RH71, src/drivers/rh71_usart.c)
+# # This maybe also has to be eval'd (?) I don't remember, if it does then this is going to be a hassle
+# define tgt_src_ifdef
+# if defined(${1})
+#   tgt_srcs += ${2}
+# endef
 
 # Sources to be included based on target board (e.g. SAMRH71-EK)
 # ...
@@ -44,6 +51,7 @@ tgt_srcs += src/drivers/rh71_usart.c
 tgt_cppflags := -g
 tgt_cppflags += -Wall -Wextra
 tgt_cppflags += -O3
+# tgt_cppflags += -Os
 tgt_cppflags += -I src/include -I src/include/generated
 # Architecture include path
 tgt_cppflags += -I src/arch/arm/include
@@ -127,12 +135,12 @@ ${objdir}/%.o : %.c
 #       to a program which might be confused by the linemarkers.
 #   -x  Specify explicitly the language for hte following input files
 
-${link_script}: tools/atsamv71q21_bl.ld
+${link_script}: tools/atsamv71q21_bl.ld src/include/generated/config.h
 	${quiet_cpp}$(strip ${CPP} -E -P -x assembler-with-cpp ${CPPFLAGS} ${tgt_cppflags} $< -o $@)
 
 # Linker script base uses config.h
-tools/atsamv71q21_bl.ld: config.h
-config.h:
+# tools/atsamv71q21_bl.ld: src/include/generated/config.h
+src/include/generated/config.h:
 
 # Add dependency of the final ELF on the generated linker script
 ${tgtdir}/${tgt_elf}: ${link_script}

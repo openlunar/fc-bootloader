@@ -32,6 +32,7 @@ void reset_handler();
 int main();
 
 // Vector table
+// TODO: Enforce vector table alignment requirements...somehow (here or in linker script)
 __attribute__((section(".vectors")))
 vector_table_t vector_table = {
 	.initial_sp_value = &_estack,
@@ -88,15 +89,16 @@ void __attribute__((naked)) reset_handler()
 	// In the future it should probably be that if the bootloader main() ever returns that the system resets
 }
 
-// __attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH )
-// {
-// 	// Suppress warnings related to unused parameter
-// 	(void)SP;
-// 	(void)RH;
+__attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH )
+{
+	// Suppress warnings related to unused parameter
+	(void)SP;
+	// (void)RH;
 
-// 	__asm__("MSR	MSP,r0"); // Set stack pointer, SP passed in r0
-// 	__asm__("BX		r1"); // Branch to application entry point, RH passed in RH
-// }
+	__asm__("MSR	MSP,r0"); // Set stack pointer, SP passed in r0
+	MMIO32(0xE000ED08) = (uint32_t)&RH; // Set new vector table
+	__asm__("BX		r1"); // Branch to application entry point, RH passed in RH
+}
 
 // TODO: Move into WDT header
 #define WDT_BASE	0x40100250
@@ -177,6 +179,10 @@ int main()
 		if ( ret == 1 ) {
 			// TODO: Better name (?)
 			ret = cmd_exe( frame.data, frame.length );
+
+			if ( ret > 0 ) {
+				break;
+			}
 		}
 
 		// Check state and flip it
@@ -187,10 +193,12 @@ int main()
 		}
 	}
 
-	// volatile uint32_t * user_app = (volatile uint32_t *)0x00404000;
+	// "ret" holds the address to branch to
+
+	volatile uint32_t * user_app = (volatile uint32_t *)ret;
 
 	// Branch to the main application in flash
-	// BootJumpASM( user_app[0], user_app[1] );
+	BootJumpASM( user_app[0], user_app[1] );
 
 	return 0;
 }

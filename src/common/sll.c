@@ -7,11 +7,11 @@ int sll_init( sll_decode_frame_t * const frame )
 {
 	frame->length = 0;
 
-	uint8_t i;
-	// Initialize frame data buffer to 0 (NOTE: mostly for debugging purposes)
-	for ( i = 0; i < SLL_MAX_PAYLOD_LEN; i++ ) {
-		frame->data[i] = 0x00;
-	}
+	// uint8_t i;
+	// // Initialize frame data buffer to 0 (NOTE: mostly for debugging purposes)
+	// for ( i = 0; i < SLL_MAX_PAYLOD_LEN; i++ ) {
+	// 	frame->data[i] = 0x00;
+	// }
 
 	// Initialize frame internal state
 	frame->_ctx.state = SLL_DECODE_SYNC1;

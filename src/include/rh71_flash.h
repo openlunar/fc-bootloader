@@ -27,6 +27,9 @@
 #define HEFC_FCR_FARG(farg) ((farg & 0xFFFF) << 8)
 #define HEFC_FCR_FCMD(fcmd) (fcmd & 0xFF)
 
+#define HEFC_FCR_FARG_SHIFT 8
+#define HEFC_FCR_FARG_MASK (0xFFFF << HEFC_FCR_FARG_SHIFT)
+
 #define HEFC_CMD_EPA_ARG_NP(np)	(np & 0x03) // Erase size in pages
 #define HEFC_CMD_EPA_ARG_NP_4	HEFC_CMD_EPA_ARG_NP(0) // 4
 #define HEFC_CMD_EPA_ARG_NP_8	HEFC_CMD_EPA_ARG_NP(1) // 8
@@ -47,6 +50,7 @@
 int rh71_flash_init();
 int rh71_flash_erase_app();
 
+int rh71_flash_erase_range( uint16_t page_start, uint16_t page_end );
 int rh71_flash_write_page( uint8_t * page_buffer, uint16_t page );
 
 #endif // RH71_FLASH_H
