@@ -37,6 +37,7 @@ tgt_srcs += src/arch/arm/vector.c
 # Sources to be included based on target processor (e.g. SAMV71)
 tgt_srcs += src/drivers/rh71_flash.c
 tgt_srcs += src/drivers/rh71_usart.c
+tgt_srcs += src/drivers/rh71_watchdog.c
 # tgt_srcs-${CONFIG_SOC_RH71} += src/drivers/rh71_usart.c
 # $(call tgt_src_ifdef, CONFIG_SOC_RH71, src/drivers/rh71_usart.c)
 # # This maybe also has to be eval'd (?) I don't remember, if it does then this is going to be a hassle
