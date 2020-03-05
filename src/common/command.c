@@ -7,8 +7,7 @@
 #include "sll.h"
 
 #include "usart.h"
-
-#include "rh71_flash.h"
+#include "flash.h"
 
 // Global frame instance used to send responses
 static uint8_t sll_buffer_g[SLL_MAX_MSG_LEN];
@@ -179,7 +178,7 @@ int _dbg_write_page( uint8_t * msg )
 
 	// commit_page_buffer( )
 	// TODO: Remove dependency on "rh71"
-	rh71_flash_write_page( page_buffer_g, page_no );
+	flash_write_page( page_buffer_g, page_no );
 
 	return 0;
 }
@@ -193,7 +192,7 @@ int _dbg_erase_range( uint8_t * msg )
 	uint16_t page_end = (msg[4] << 8) | msg[5];
 
 	// NOTE: Being lazy - this function validates the arguments
-	return rh71_flash_erase_range( page_start, page_end );
+	return flash_erase_range( page_start, page_end );
 }
 
 int cmd_resp( cmd_bl_verb_t verb, cmd_resp_t resp )

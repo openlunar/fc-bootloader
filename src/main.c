@@ -13,7 +13,7 @@
 // SoC headers
 #include "usart.h"
 #include "rh71_pio.h"
-#include "rh71_flash.h"
+#include "flash.h"
 
 // Standard / system headers
 #include <stdint.h>
@@ -96,6 +96,7 @@ __attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH 
 	// (void)RH;
 
 	__asm__("MSR	MSP,r0"); // Set stack pointer, SP passed in r0
+	// TODO: Replace hard-coded reference to VTOR address
 	MMIO32(0xE000ED08) = (uint32_t)&RH; // Set new vector table
 	__asm__("BX		r1"); // Branch to application entry point, RH passed in RH
 }
@@ -112,32 +113,6 @@ __attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH 
 // LED1 - PB23 - PWMCI_PWML0
 // LED2 - PF19 - NWR0
 // LED3 - PF20 - NWR1
-
-// uint8_t tohexchar( uint8_t d )
-// {
-// 	if ( d < 10 ) {
-// 		return '0' + d;
-// 	} else if ( d < 16 ) {
-// 		return 'A' + (d - 10);
-// 	} else {
-// 		return 'X';
-// 	}
-
-// 	/* -- Not Reached -- */
-// }
-
-// void print_u8_hex( uint8_t val )
-// {
-// 	uint8_t s[2];
-// 	s[0] = tohexchar( val >> 4 );
-// 	s[1] = tohexchar( val & 0xF );
-// 	usart_write( 1, s, 2 );
-// }
-
-// void print_nl()
-// {
-// 	usart_write( 1, (uint8_t *)"\n\r", 2 );
-// }
 
 int main()
 {
@@ -159,7 +134,7 @@ int main()
 	// for ( i = 0; i < PAGE_SIZE; i++ ) {
 	// 	page_buffer[i] = i;
 	// }
-	rh71_flash_init();
+	flash_init();
 	// // rh71_flash_erase_app();
 	// rh71_flash_write_page( page_buffer, 0 );
 

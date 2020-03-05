@@ -1,6 +1,45 @@
 
-#include "rh71_flash.h"
+#include "flash.h"
+
+#include "config.h"
+
 #include "rh71_pmc.h"
+
+
+// Register interface
+#define HEFC_BASE	0x40004000
+
+#define HEFC_FMR	MMIO32(HEFC_BASE+0x00)
+#define HEFC_FCR	MMIO32(HEFC_BASE+0x04)
+#define HEFC_FSR	MMIO32(HEFC_BASE+0x08)
+#define HEFC_FRR	MMIO32(HEFC_BASE+0x0C)
+
+// HEFC_FCR
+#define HEFC_FCR_FKEY_PASSWD	0x5A
+
+#define HEFC_FCR_FKEY(fkey) ((fkey & 0xFF) << 24)
+#define HEFC_FCR_FARG(farg) ((farg & 0xFFFF) << 8)
+#define HEFC_FCR_FCMD(fcmd) (fcmd & 0xFF)
+
+#define HEFC_FCR_FARG_SHIFT 8
+#define HEFC_FCR_FARG_MASK (0xFFFF << HEFC_FCR_FARG_SHIFT)
+
+#define HEFC_CMD_EPA_ARG_NP(np)	(np & 0x03) // Erase size in pages
+#define HEFC_CMD_EPA_ARG_NP_4	HEFC_CMD_EPA_ARG_NP(0) // 4
+#define HEFC_CMD_EPA_ARG_NP_8	HEFC_CMD_EPA_ARG_NP(1) // 8
+#define HEFC_CMD_EPA_ARG_NP_16	HEFC_CMD_EPA_ARG_NP(2) // 16
+#define HEFC_CMD_EPA_ARG_NP_32	HEFC_CMD_EPA_ARG_NP(3) // 32
+
+#define HEFC_CMD_EPA_ARG_SP(sp)	((sp & 0xFFF) << 2) // Start page for page erase
+
+#define HEFC_CMD_EPA_ARG(sp,np)	(HEFC_CMD_EPA_ARG_SP(sp) | HEFC_CMD_EPA_ARG_NP(np))
+
+// HEFC_FSR
+
+#define HEFC_FSR_FRDY		(1 << 0)
+#define HEFC_FSR_FCMDE		(1 << 1)
+#define HEFC_FSR_FLOCKE		(1 << 2)
+#define HEFC_FSR_FLERR		(1 << 3)
 
 // Write sequence:
 //
@@ -166,7 +205,7 @@ typedef enum {
 // Page count    = 512 (10 bits)
 // Sector count  = xxx
 
-int rh71_flash_init()
+int flash_init()
 {
 	// The write/erase clock is provided by the PMC. It must be configured at 2 MHz and enabled before using the erase / write feature on Flash memory.
 	PMC_PCR = ((1 << 28 /* EN */) | (1 << 12 /* CMD - Write Mode */) | (50 /* PID8 */))
@@ -178,7 +217,7 @@ int rh71_flash_init()
 	return 0;
 }
 
-int rh71_flash_erase_range( uint16_t page_start, uint16_t page_end )
+int flash_erase_range( uint16_t page_start, uint16_t page_end )
 {
 	// TODO: RH71 magic number
 	if ( (page_start > 512) || (page_end > 512) ) {
@@ -213,7 +252,7 @@ int rh71_flash_erase_range( uint16_t page_start, uint16_t page_end )
 	return 0;
 }
 
-int rh71_flash_erase_app()
+int flash_erase_app()
 {
 	// TODO: Check that the page isn't already erased
 
@@ -253,7 +292,7 @@ int rh71_flash_erase_app()
 
 // int write_page_buffer( frame_t * frame, uint8_t * page_buffer );
 // Must be a full page
-int rh71_flash_write_page( uint8_t * page_buffer, uint16_t page )
+int flash_write_page( uint8_t * page_buffer, uint16_t page )
 {
 	// There are probably alignment requirements for this sort of thing; I know
 	// from the datasheet that using DMA requires 32-bit alignment
@@ -267,10 +306,10 @@ int rh71_flash_write_page( uint8_t * page_buffer, uint16_t page )
 	// data at a time, assembling words in little-endian format (for ARM)...?
 
 	// Copy data from application page buffer into HEFC page; must be written in 4-byte chunks
-	// volatile uint32_t * app_start_addr = (volatile uint32_t *)0x10004000 + (page * PAGE_SIZE);
-	volatile uint32_t * app_start_addr = (volatile uint32_t *)0x10000000 + (page * PAGE_SIZE);
+	// volatile uint32_t * app_start_addr = (volatile uint32_t *)0x10004000 + (page * CONFIG_PAGE_SIZE);
+	volatile uint32_t * app_start_addr = (volatile uint32_t *)0x10000000 + (page * CONFIG_PAGE_SIZE);
 	uint16_t i;
-	for ( i = 0; i < PAGE_SIZE; i += 4 ) {
+	for ( i = 0; i < CONFIG_PAGE_SIZE; i += 4 ) {
 		// Write word
 		*app_start_addr = page_buffer[i] | (page_buffer[i+1] << 8)
 			 | (page_buffer[i+2] << 16) | (page_buffer[i+3] << 24);
