@@ -1,6 +1,8 @@
 
-#include "v71_usart.h"
+#include "usart.h"
+#include "config.h"
 #include "common.h"
+
 #include "v71_pio.h"
 
 // V71 xplained
@@ -33,6 +35,9 @@
 #define PMC_SCER	MMIO32((PMC_BASE) + 0x00)
 #define PMC_PCER0	MMIO32((PMC_BASE) + 0x10)
 
+#define MATRIX_BASE	0x40088000
+#define CCFG_SYSIO	MMIO32((MATRIX_BASE) + 0x114)
+
 // Default clock on V71: 12 MHz
 // static const uint32_t sys_clk = 12000000;
 
@@ -43,6 +48,9 @@
 // No interrupts enabled
 int usart_init()
 {
+	// Disable SYSIO4 function (TDI) in favor of PB4 normal function
+	CCFG_SYSIO |= (1 << 4); // SYSIO4
+
 	// Configure TX pin
 	// PIO_ABCDSR1 and PIO_ABCDSR2 both set to "1" to select "D"
 	PIOB_ABCDSR1 |= (1 << 4);

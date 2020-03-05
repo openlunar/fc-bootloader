@@ -6,6 +6,8 @@ SHELL := bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
+# openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg
+
 include tools/framework.mk
 # verbose := true
 
@@ -38,6 +40,11 @@ tgt_srcs += src/arch/arm/vector.c
 tgt_srcs += src/drivers/rh71_flash.c
 tgt_srcs += src/drivers/rh71_usart.c
 tgt_srcs += src/drivers/rh71_watchdog.c
+
+# tgt_srcs += src/drivers/v71_flash.c
+# tgt_srcs += src/drivers/v71_usart.c
+# tgt_srcs += src/drivers/v71_watchdog.c
+
 # tgt_srcs-${CONFIG_SOC_RH71} += src/drivers/rh71_usart.c
 # $(call tgt_src_ifdef, CONFIG_SOC_RH71, src/drivers/rh71_usart.c)
 # # This maybe also has to be eval'd (?) I don't remember, if it does then this is going to be a hassle

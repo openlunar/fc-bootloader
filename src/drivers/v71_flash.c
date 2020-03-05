@@ -1,5 +1,7 @@
 
-#include "v71_flash.h"
+#include "flash.h"
+#include "config.h"
+#include "common.h"
 
 // TODO: Move these into a device header (?)
 
@@ -204,7 +206,12 @@ typedef enum {
 //   Large Sector   - 112 KB ; 224 pages
 // Sector 1..n      - 128 KB ; 256 pages
 
-int v71_flash_erase_app()
+int flash_init()
+{
+	return 0;
+}
+
+int flash_erase_app()
 {
 	// TODO: Check that the page isn't already erased
 
@@ -241,9 +248,18 @@ int v71_flash_erase_app()
 	return 0;
 }
 
+int flash_erase_range( uint16_t page_start, uint16_t page_end )
+{
+	(void)page_start;
+	(void)page_end;
+
+	// NOT IMPLEMENTED
+	return (-1);
+}
+
 // int write_page_buffer( frame_t * frame, uint8_t * page_buffer );
 // Must be a full page
-int v71_flash_write_page( uint8_t * page_buffer, uint16_t page )
+int flash_write_page( uint8_t * page_buffer, uint16_t page )
 {
 	// There are probably alignment requirements for this sort of thing; I know
 	// from the datasheet that using DMA requires 32-bit alignment
@@ -257,9 +273,9 @@ int v71_flash_write_page( uint8_t * page_buffer, uint16_t page )
 	// data at a time, assembling words in little-endian format (for ARM)...?
 
 	// Copy data from application page buffer into EEFC page; must be written in 4-byte chunks
-	volatile uint32_t * app_start_addr = (volatile uint32_t *)0x00404000 + (page * PAGE_SIZE);
+	volatile uint32_t * app_start_addr = (volatile uint32_t *)0x00404000 + (page * CONFIG_PAGE_SIZE);
 	uint16_t i;
-	for ( i = 0; i < PAGE_SIZE; i += 4 ) {
+	for ( i = 0; i < CONFIG_PAGE_SIZE; i += 4 ) {
 		// Write word
 		*app_start_addr = page_buffer[i] | (page_buffer[i+1] << 8)
 			 | (page_buffer[i+2] << 16) | (page_buffer[i+3] << 24);

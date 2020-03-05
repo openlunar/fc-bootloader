@@ -21,6 +21,7 @@ MEMORY
 	rom  (rx) : ORIGIN = CONFIG_SYS_TEXT_BASE, LENGTH = 0x1000
 	/* TODO: Need a constant for RAM base */
 	ram (rwx) : ORIGIN = 0x21000000, LENGTH = 0x4000
+	/*ram (rwx) : ORIGIN = 0x20400000, LENGTH = 0x4000*/
 #endif
 }
 
