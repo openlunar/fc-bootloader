@@ -68,6 +68,12 @@ def send_page(page,page_num):
 
 	return 0
 
+# !!!!!!!!!!!
+# TODO: Add something that limits the maximum serial write packet size to 64 bytes (limited by Atmel EDBG (?))
+
+# Can I use objcopy to pad to a page size (?)
+# For example, if the last page is only 412 bytes can I fill the remaining bytes to 512 with 0xFF (?)
+
 # Synchronize communication channel (send a ping and get a valid response)
 ser.flushInput()
 m = msg.build_msg( struct.pack('>BB',1,0) )

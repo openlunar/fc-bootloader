@@ -6,6 +6,8 @@ SHELL := bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
+# openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg
+
 include tools/framework.mk
 # verbose := true
 
@@ -20,7 +22,13 @@ target       := bootloader
 builddir     := build
 tgt_bindir   := bin
 
-ARMGNU := arm-none-eabi
+# The directories for these two files need to exist before they're generated!
+config_file     := ${builddir}/.config
+config_hdr_file := ${builddir}/src/include/config.h
+
+-include ${config_file}
+
+CROSSCOMPILER := arm-none-eabi-
 
 # These all need to be prepended with path to FreeRTOS source
 
@@ -35,8 +43,16 @@ tgt_srcs += src/common/command.c
 tgt_srcs += src/arch/arm/vector.c
 
 # Sources to be included based on target processor (e.g. SAMV71)
-tgt_srcs += src/drivers/rh71_flash.c
-tgt_srcs += src/drivers/rh71_usart.c
+tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_flash.c
+tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_usart.c
+tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_watchdog.c
+
+tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_flash.c
+tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_usart.c
+tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_watchdog.c
+
+tgt_srcs += ${tgt_srcs-y}
+
 # tgt_srcs-${CONFIG_SOC_RH71} += src/drivers/rh71_usart.c
 # $(call tgt_src_ifdef, CONFIG_SOC_RH71, src/drivers/rh71_usart.c)
 # # This maybe also has to be eval'd (?) I don't remember, if it does then this is going to be a hassle
@@ -48,11 +64,13 @@ tgt_srcs += src/drivers/rh71_usart.c
 # Sources to be included based on target board (e.g. SAMRH71-EK)
 # ...
 
+# NOTE: Need to add rule to generate '${builddir}/src/include/generated' (depdir dependency for rule that generates the contents of this folder)
+
 tgt_cppflags := -g
 tgt_cppflags += -Wall -Wextra
 tgt_cppflags += -O3
 # tgt_cppflags += -Os
-tgt_cppflags += -I src/include -I src/include/generated
+tgt_cppflags += -I src/include -I $(dir ${config_hdr_file})
 # Architecture include path
 tgt_cppflags += -I src/arch/arm/include
 # tgt_cppflags += -fno-builtin
@@ -60,10 +78,7 @@ tgt_cppflags += -ffreestanding
 tgt_cppflags += -fno-builtin-memcpy -fno-builtin-memset
 # tgt_cppflags += -O0
 # tgt_cppflags += -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-sp-d16
-# 
-# !!!!!!!! NOTE: I think this is the wrong FPU !!!!!!!!
-# 
-tgt_cppflags  += -mcpu=cortex-m7 -mfloat-abi=softfp -mfpu=fpv4-sp-d16
+tgt_cppflags += -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp -mfpu=fpv5-sp-d16
 tgt_cflags   := 
 tgt_ldflags  := -T ${link_script}
 tgt_ldflags  += -nostdlib
@@ -74,25 +89,24 @@ tgt_ldflags  += -z max-page-size=0x1000
 # tgt_ldflags  += --specs=nosys.specs
 # tgt_ldflags  += -L arm-none-eabi/lib/
 # tgt_ldflags  += -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-sp-d16
-# 
-# !!!!!!!! NOTE: I think this is the wrong FPU !!!!!!!!
-# 
-tgt_ldflags  += -mcpu=cortex-m7 -mfloat-abi=softfp -mfpu=fpv4-sp-d16
+tgt_ldflags  += -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp -mfpu=fpv5-sp-d16
 tgt_ldlibs   :=
 # tgt_ldlibs   += -lgcc
 # tgt_ldlibs   += -lc
 asm_flags    = -Wa,-adhln=$(addsuffix .s,$(basename $@))
 
 # Configure tooling
-AS      := ${ARMGNU}-as
-CC      := ${ARMGNU}-gcc
-CPP     := ${ARMGNU}-cpp
-CXX     := ${ARMGNU}-g++
-# LINKER  := ${ARMGNU}-ld
-# LINKER  := ${ARMGNU}-g++
-LINKER  := ${ARMGNU}-gcc
-OBJCOPY := ${ARMGNU}-objcopy
-OBJDUMP := ${ARMGNU}-objdump
+AS      := ${CROSSCOMPILER}as
+CC      := ${CROSSCOMPILER}gcc
+CPP     := ${CROSSCOMPILER}cpp
+CXX     := ${CROSSCOMPILER}g++
+# LINKER  := ${CROSSCOMPILER}ld
+# LINKER  := ${CROSSCOMPILER}g++
+LINKER  := ${CROSSCOMPILER}gcc
+OBJCOPY := ${CROSSCOMPILER}objcopy
+OBJDUMP := ${CROSSCOMPILER}objdump
+
+PYTHON := python3
 
 objdir     := ${builddir}
 tgtdir     := ${tgt_bindir}
@@ -135,15 +149,49 @@ ${objdir}/%.o : %.c
 #       to a program which might be confused by the linemarkers.
 #   -x  Specify explicitly the language for hte following input files
 
-${link_script}: tools/atsamv71q21_bl.ld src/include/generated/config.h
+${link_script}: tools/atsamv71q21_bl.ld ${config_hdr_file}
 	${quiet_cpp}$(strip ${CPP} -E -P -x assembler-with-cpp ${CPPFLAGS} ${tgt_cppflags} $< -o $@)
 
 # Linker script base uses config.h
 # tools/atsamv71q21_bl.ld: src/include/generated/config.h
-src/include/generated/config.h:
+${config_hdr_file}:
 
 # Add dependency of the final ELF on the generated linker script
 ${tgtdir}/${tgt_elf}: ${link_script}
+
+# DEVELOPMENT
+
+# # Try to get a list of config files and make sure they exist
+# # Could use this...
+# # %_defconfig:board_defconfig := $(filter %_defconfig,${MAKECMDGOALS})
+# # firstword used in case someone supplies two *_defconfig goals (which is not supported)
+# board_defconfig := $(firstword $(filter %_defconfig,${MAKECMDGOALS}))
+# # Could convert the operation below into a function that provides the functionality "if more than one list item"; I wrote it to warn if there is more than one *_defconfig file.
+# # $(ifneq ,$(word 2,$(filter %_defconfig,${MAKECMDGOALS})),$(error "Do not supply more than one *_defconfig file"))
+# # board_defconfig := $(filter %_defconfig,${MAKECMDGOALS})
+# board := 
+# test_var := $(wildcard boards/*/${board_defconfig})
+
+# Ok, so u-boot supports something like "make valid_defconfig valid_defconfig"
+# I don't know why you would want to do it but if you're dumb enough to do it, go for it
+# board_defconfig := $(firstword $(filter %_defconfig,${MAKECMDGOALS}))
+# Also, for now, we're going to pass the buck to the Python script to validate that the file exists and spit out an error if it doesn't.
+# If I wanted to create a list of defconfig paths, validate them, and still use them in the pattern rule then I could create a list of lists (one for each defconfig) and then use a make find command to get the correct list based on the "$@" variable
+
+# Here is where we check that these files exist...however, that's not how I'm setting things up right now; I don't have a persistent way of tracking the board defconfig between builds. TBD.
+# $(foreach c,${board_defconfig},\
+# 	$(ifeq ,$(wildcard ${c})),$(error "File ${c} doesn't exist"))
+
+depdirs += $(dir ${config_hdr_file})
+
+# Expected pattern of: <board-name>_defconfig
+# 	echo ${board_defconfig}
+# 	${PYTHON} tools/kconfig.py Kconfig ${board_defconfig}
+%_defconfig: | $(dir ${config_hdr_file})
+	${PYTHON} tools/kconfig.py Kconfig ${config_file} ${config_hdr_file} src/boards/$*/$@
+
+# DEVELOPMENT
+
 
 .PHONY: clean
 clean:

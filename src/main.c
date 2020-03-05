@@ -12,8 +12,8 @@
 
 // SoC headers
 #include "usart.h"
-#include "rh71_pio.h"
-#include "rh71_flash.h"
+#include "flash.h"
+#include "watchdog.h"
 
 // Standard / system headers
 #include <stdint.h>
@@ -96,13 +96,14 @@ __attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH 
 	// (void)RH;
 
 	__asm__("MSR	MSP,r0"); // Set stack pointer, SP passed in r0
+	// NOTE: https://www.keil.com/pack/doc/CMSIS/Core/html/using_VTOR_pg.html
+	// TODO: Replace hard-coded reference to VTOR address
+	// __disable_irq(); // I don't think this is necessary here - interrupts *haven't* been enabled
 	MMIO32(0xE000ED08) = (uint32_t)&RH; // Set new vector table
+	__DSB();
+	// __enable_irq();
 	__asm__("BX		r1"); // Branch to application entry point, RH passed in RH
 }
-
-// TODO: Move into WDT header
-#define WDT_BASE	0x40100250
-#define WDT_MR		MMIO32((WDT_BASE) + 0x04)
 
 // TODO: Move into RTC header
 // #define RTC_BASE	0x400E1860
@@ -113,55 +114,21 @@ __attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH 
 // LED2 - PF19 - NWR0
 // LED3 - PF20 - NWR1
 
-// uint8_t tohexchar( uint8_t d )
-// {
-// 	if ( d < 10 ) {
-// 		return '0' + d;
-// 	} else if ( d < 16 ) {
-// 		return 'A' + (d - 10);
-// 	} else {
-// 		return 'X';
-// 	}
-
-// 	/* -- Not Reached -- */
-// }
-
-// void print_u8_hex( uint8_t val )
-// {
-// 	uint8_t s[2];
-// 	s[0] = tohexchar( val >> 4 );
-// 	s[1] = tohexchar( val & 0xF );
-// 	usart_write( 1, s, 2 );
-// }
-
-// void print_nl()
-// {
-// 	usart_write( 1, (uint8_t *)"\n\r", 2 );
-// }
-
 int main()
 {
 	// Disable watchdog (WDT0); WDT_MR can only be written once after reset
 	// TODO: Remove this - the application will configure the WDT; the bootloader will just have to deal with this for now (16s timeout)
-	WDT_MR |= (1 << 15 /* WDDIS */);
+	watchdog_disable();
 
-	// Configure PB19 (LED0) as an output
-	PIOB_MSKR = (1 << 19);
-	PIOB_CFGR = (1 << 8); // DIR: Output
+	// // Configure PB19 (LED0) as an output
+	// PIOB_MSKR = (1 << 19);
+	// PIOB_CFGR = (1 << 8); // DIR: Output
 
 	// Maybe we UART quickly?
 	usart_init();
 	// usart_write( 1, (uint8_t *)"OLF RH71 Bootloader\n\r", 21 );
 
-	// Write a page to flash
-	// volatile uint32_t i;
-	// uint8_t page_buffer[PAGE_SIZE];
-	// for ( i = 0; i < PAGE_SIZE; i++ ) {
-	// 	page_buffer[i] = i;
-	// }
-	rh71_flash_init();
-	// // rh71_flash_erase_app();
-	// rh71_flash_write_page( page_buffer, 0 );
+	flash_init();
 
 	// NOTE: To save data space for now there will be no copying of data from link layer buffer to a higher-layer buffer; to decouple the link layer and command parser I'm going to pass references to the data buffer and data length from the sll_frame_t.
 	sll_decode_frame_t frame;
@@ -185,12 +152,12 @@ int main()
 			}
 		}
 
-		// Check state and flip it
-		if ( PIOB_ODSR & (1 << 19) ) {
-			PIOB_CODR = (1 << 19);
-		} else {
-			PIOB_SODR = (1 << 19);
-		}
+		// // Check state and flip it
+		// if ( PIOB_ODSR & (1 << 19) ) {
+		// 	PIOB_CODR = (1 << 19);
+		// } else {
+		// 	PIOB_SODR = (1 << 19);
+		// }
 	}
 
 	// "ret" holds the address to branch to

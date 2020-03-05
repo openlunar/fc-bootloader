@@ -1,0 +1,28 @@
+
+# choice
+# 	prompt "Atmel SAMV71 MCU Selection"
+# 	depends on SOC_SERIES_SAMV71
+# 
+# config SOC_SAMV71Q21
+# 	bool "SAMV71Q21"
+# 
+# endchoice
+
+if SOC_SERIES_SAMV71
+
+# NOTE: The help for this should be provided by a higher-level Kconfig
+config PAGE_SIZE
+	int
+	default 512
+	#int "FLASH page size"
+
+config FLASH_BASE_ADDRESS
+	default 0x00400000
+
+config SRAM_BASE_ADDRESS
+	default 0x20400000
+
+config SRAM_SIZE
+	default 384
+
+endif # SOC_SERIES_SAMV71

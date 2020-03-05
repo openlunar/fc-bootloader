@@ -1,0 +1,2 @@
+
+source "src/soc/arm/atmel_sam/*/Kconfig.series"

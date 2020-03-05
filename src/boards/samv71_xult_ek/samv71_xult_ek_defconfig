@@ -1,0 +1,5 @@
+
+# CONFIG_BOARD_SAMV71_XULT_EK=y
+# This configuration option needs to be set by the above one being set
+CONFIG_SOC_SERIES_SAMV71=y
+# CONFIG_SOC_SAMV71Q21=y

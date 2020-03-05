@@ -1,0 +1,13 @@
+
+# The machine architecture is selected by the SOC, which is selected by the board, which is selected by the user
+
+config ARM
+	bool
+	help
+		ARM architecture
+
+# Plan to support
+config SANDBOX
+	bool
+	help
+		Sandbox architecture

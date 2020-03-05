@@ -1,0 +1,37 @@
+
+source "src/arch/Kconfig"
+source "src/soc/Kconfig"
+
+menu "General Options"
+
+config BOOTLOADER_SIZE
+	int "FLASH reserved for bootloader"
+	default 8
+	help
+		This option specifies the amount of FLASH (measured in kB) reserved for
+		a bootloader image.
+
+config STACK_SIZE
+	int "Size of stack"
+	default 1024
+	help
+		TBD
+
+endmenu
+
+menu "Build Options"
+
+config RAM_BUILD
+	bool "Build for execution in RAM"
+	default n
+	help
+		TBD
+
+config RAM_LOAD_AREA_SIZE
+	int "RAM reserved for image"
+	depends on RAM_BUILD
+	default 8
+	help
+		Area reserved in RAM for loading an image (measured in kB)
+
+endmenu
