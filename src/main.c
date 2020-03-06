@@ -96,8 +96,12 @@ __attribute__( ( naked, noreturn ) ) void BootJumpASM( uint32_t SP, uint32_t RH 
 	// (void)RH;
 
 	__asm__("MSR	MSP,r0"); // Set stack pointer, SP passed in r0
+	// NOTE: https://www.keil.com/pack/doc/CMSIS/Core/html/using_VTOR_pg.html
 	// TODO: Replace hard-coded reference to VTOR address
+	// __disable_irq(); // I don't think this is necessary here - interrupts *haven't* been enabled
 	MMIO32(0xE000ED08) = (uint32_t)&RH; // Set new vector table
+	__DSB();
+	// __enable_irq();
 	__asm__("BX		r1"); // Branch to application entry point, RH passed in RH
 }
 
