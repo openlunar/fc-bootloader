@@ -1,0 +1,35 @@
+
+choice
+	prompt "SoC/CPU/Configuration Selection"
+
+source "src/soc/arm/*/Kconfig.soc"
+
+endchoice
+
+# This is where the actual hardware configuration comes from - e.g. MCU part number selection, PAGE_SIZE, etc.
+menu "Hardware Configuration"
+# osource "$(SOC_DIR)/$(ARCH)/Kconfig"
+# osource "$(SOC_DIR)/$(ARCH)/*/Kconfig"
+osource "src/soc/arm/*/Kconfig"
+
+config PAGE_SIZE
+	int "FLASH page size"
+	help
+		"FLASH page size in bytes"
+
+config FLASH_BASE_ADDRESS
+	hex "FLASH base address"
+	help
+		"xxx"
+
+config SRAM_BASE_ADDRESS
+	hex "SRAM base address"
+	help
+		"xxx"
+
+config SRAM_SIZE
+	int "SRAM size"
+	help
+		"SRAM size in kB"
+
+endmenu

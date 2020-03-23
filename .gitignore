@@ -1,3 +1,13 @@
 
+# Build artifacts
 /bin
 /build
+
+# Development
+/dev
+
+# Text editor settings
+*.sublime-*
+
+# Python
+__pycache__/

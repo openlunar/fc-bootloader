@@ -19,7 +19,7 @@ ENTRY(reset_handler)
 // TODO: Think about any alignment requirements for all of this
 
 // NOTE: I think presently this is independent of load method
-#define ROM_SIZE		(CONFIG_BOOTLOADER_SIZE)
+#define ROM_SIZE		(CONFIG_BOOTLOADER_SIZE) * 1K
 
 // TODO: Should this be calculated outside of the linker script (?) - seems like this information might be useful for other code and should probably only be calculated once...
 #if defined(CONFIG_RAM_BUILD)
@@ -27,14 +27,14 @@ ENTRY(reset_handler)
 	#define ROM_ADDR	(CONFIG_SRAM_BASE_ADDRESS)
 
 	#define RAM_ADDR	(CONFIG_SRAM_BASE_ADDRESS + CONFIG_BOOTLOADER_SIZE)
-	#define RAM_SIZE	(CONFIG_SRAM_SIZE - CONFIG_BOOTLOADER_SIZE)
+	#define RAM_SIZE	(CONFIG_SRAM_SIZE - CONFIG_BOOTLOADER_SIZE) * 1K
 
 #else // ! defined(CONFIG_RAM_BUILD)
 // Execute from FLASH
 	#define ROM_ADDR	(CONFIG_FLASH_BASE_ADDRESS)
 
 	#define RAM_ADDR	(CONFIG_SRAM_BASE_ADDRESS)
-	#define RAM_SIZE	(CONFIG_SRAM_SIZE)
+	#define RAM_SIZE	(CONFIG_SRAM_SIZE) * 1K
 #endif // defined(CONFIG_RAM_BUILD)
 
 // Memory Spaces Definitions

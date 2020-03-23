@@ -1,0 +1,17 @@
+
+config SOC_FAMILY_SAM
+	bool
+	# select HAS_SEGGER_RTT
+
+# Only show these options if SAM is the active SOC family
+if SOC_FAMILY_SAM
+
+config SOC_FAMILY
+	string
+	default "atmel_sam"
+
+# Select SoC Part No. and configuration options
+# Include all Kconfig files from the selected family series folders
+source "src/soc/arm/atmel_sam/*/Kconfig.soc"
+
+endif # SOC_FAMILY_SAM

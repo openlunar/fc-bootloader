@@ -1,0 +1,18 @@
+
+if SOC_SERIES_SAMRH71
+
+# NOTE: The help for this should be provided by a higher-level Kconfig
+config PAGE_SIZE
+	int
+	default 256
+
+config FLASH_BASE_ADDRESS
+	default 0x10000000
+
+config SRAM_BASE_ADDRESS
+	default 0x21000000
+
+config SRAM_SIZE
+	default 768
+
+endif # SOC_SERIES_SAMV71

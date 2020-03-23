@@ -18,7 +18,9 @@ static uint8_t page_buffer_g[CONFIG_PAGE_SIZE];
 // TODO:
 // - This internally should be split into a "command parsing" and "command execution" phase
 
+#ifdef CONFIG_RAM_BUILD
 int _write_ram( uint8_t * msg );
+#endif // CONFIG_RAM_BUILD
 
 int _write_page_buffer( uint8_t * msg );
 
@@ -58,9 +60,11 @@ int cmd_exe( uint8_t * data, uint8_t len )
 			ret = _write_page_buffer( data );
 			break;
 	// -- Debug Commands ---------------------------------------------------- //
+#ifdef CONFIG_RAM_BUILD
 		case CMD_BL_VERB_DBG_WRITE_TO_RAM:
 			ret = _write_ram( data );
 			break;
+#endif // CONFIG_RAM_BUILD
 		case CMD_BL_VERB_DBG_COMMIT_PAGE:
 			ret = _dbg_write_page( data );
 			break;
@@ -85,6 +89,7 @@ int cmd_exe( uint8_t * data, uint8_t len )
 	return ret;
 }
 
+#ifdef CONFIG_RAM_BUILD
 int _write_ram( uint8_t * msg )
 {
 	// arg0: byte offset (u16), big endian
@@ -120,6 +125,7 @@ int _write_ram( uint8_t * msg )
 
 	return 0;
 }
+#endif // CONFIG_RAM_BUILD
 
 int _write_page_buffer( uint8_t * msg )
 {
