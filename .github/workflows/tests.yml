@@ -14,4 +14,4 @@ jobs:
         with:
           release: '9-2019-q4'
       - name: make
-        run: make 
+        run: make samrh71_ek_defconfig && make
