@@ -8,7 +8,7 @@
 | Copyright: | Copyright © 2020 OpenLunar    |  
 | Version:   | 0     |  
 
-[![Build Status](https://github.com/openlunar/fc-bootloader/workflows/C/C++%20CI/badge.svg)](https://github.com/openlunar/fc-bootloader/actions?query=workflow%3A%22C%2FC%2B%2B+CI%22)
+[![C/C++ CI](https://github.com/openlunar/fc-bootloader/workflows/C/C++%20CI/badge.svg)](https://github.com/openlunar/fc-bootloader/actions?query=workflow%3A%22C%2FC%2B%2B+CI%22)
 
 ## Introduction ##
 Flight Computer Bootloader
