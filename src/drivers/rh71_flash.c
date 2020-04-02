@@ -219,7 +219,7 @@ int flash_init()
 
 int flash_erase_range( uint16_t page_start, uint16_t page_end )
 {
-	// TODO: RH71 magic number
+	// TODO: (2) [refactor] @magic Replace "512" with (?) CONFIG value for MAX_PAGE_NO
 	if ( (page_start > 512) || (page_end > 512) ) {
 		return (-1);
 	}
@@ -228,7 +228,7 @@ int flash_erase_range( uint16_t page_start, uint16_t page_end )
 		return (-1);
 	}
 
-	// TODO: Be more clever about usage of EP vs EPA for page ranges
+	// TODO: (60) [feature] @nth Be more clever about usage of EP vs EPA for page ranges
 
 	uint32_t fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD) | HEFC_FCR_FCMD(HEFC_CMD_EP);
 	uint32_t fsr;
@@ -252,39 +252,123 @@ int flash_erase_range( uint16_t page_start, uint16_t page_end )
 	return 0;
 }
 
-int flash_erase_app()
-{
-	// TODO: Check that the page isn't already erased
+// int flash_erase_app()
+// {
+// 	// TODO: (60) [feature] @nth Check that the page isn't already erased
 
-	// The app is located at 0x00404000 (0x4000) and is 0x1000 bytes (4 KB)
-	// App start sector : 0
-	// App start page   : 32
-	//
-	// So that's a EPA (erase pages) command with (32,2) as the argument
-	// (start page = 32, erase 16 pages (smallest size available for 128 KB
-	// sectors))
+// 	// The app is located at 0x00404000 (0x4000) and is 0x1000 bytes (4 KB)
+// 	// App start sector : 0
+// 	// App start page   : 32
+// 	//
+// 	// So that's a EPA (erase pages) command with (32,2) as the argument
+// 	// (start page = 32, erase 16 pages (smallest size available for 128 KB
+// 	// sectors))
 
-	// Issue the erase sector command
-	// hefc_cmd_epa( 32, HEFC_CMD_EPA_FARG_NP_16 );
-	// hefc_command( HEFC_CMD_ES,  );
-	uint32_t fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD) | HEFC_FCR_FCMD(HEFC_CMD_EPA);
-	// Ahhhhh. I'll probably want a function or macro that does the proper division based on *_NP_* argument, e.g. NP_16 divides page number by 16, the actual argument is in [15:3]
-	// fcr |= HEFC_FCR_FARG( HEFC_CMD_EPA_ARG((2 << 2), HEFC_CMD_EPA_ARG_NP_16 ) );
-	fcr |= HEFC_FCR_FARG( HEFC_CMD_EPA_ARG((0 << 2), HEFC_CMD_EPA_ARG_NP_16 ) );
+// 	// Issue the erase sector command
+// 	// hefc_cmd_epa( 32, HEFC_CMD_EPA_FARG_NP_16 );
+// 	// hefc_command( HEFC_CMD_ES,  );
+// 	uint32_t fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD) | HEFC_FCR_FCMD(HEFC_CMD_EPA);
+// 	// Ahhhhh. I'll probably want a function or macro that does the proper division based on *_NP_* argument, e.g. NP_16 divides page number by 16, the actual argument is in [15:3]
+// 	// fcr |= HEFC_FCR_FARG( HEFC_CMD_EPA_ARG((2 << 2), HEFC_CMD_EPA_ARG_NP_16 ) );
+// 	fcr |= HEFC_FCR_FARG( HEFC_CMD_EPA_ARG((0 << 2), HEFC_CMD_EPA_ARG_NP_16 ) );
 
-	// This should be checking the FRDY bit *before* executing a command
-	// The command execution flow chart should probably be implemented in the hefc_command() (or per-command) function
+// 	// This should be checking the FRDY bit *before* executing a command
+// 	// The command execution flow chart should probably be implemented in the hefc_command() (or per-command) function
 
-	// Write command to command register
-	HEFC_FCR = fcr;
+// 	// Write command to command register
+// 	HEFC_FCR = fcr;
 
-	// Wait for erase to complete (HEFC_FSR.FRDY)
+// 	// Wait for erase to complete (HEFC_FSR.FRDY)
+// 	uint32_t fsr;
+// 	while ( ! ((fsr = HEFC_FSR) & HEFC_FSR_FRDY) );
+
+// 	// fsr &= (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR);
+// 	if ( fsr & (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR) ) {
+// 		return (-fsr); // Some error occurred during the operation
+// 	}
+
+// 	return 0;
+// }
+
+// TODO: Probably want a timeout and to indicate an error if it times out
+// Blocking wait for FSR
+inline uint32_t wait_fsr_frdy() {
 	uint32_t fsr;
 	while ( ! ((fsr = HEFC_FSR) & HEFC_FSR_FRDY) );
+	return fsr;
+}
 
-	// fsr &= (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR);
-	if ( fsr & (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR) ) {
-		return (-fsr); // Some error occurred during the operation
+// Ok, memory layout:
+// - Designed for SAMRH71 (smallest internal flash)
+// - Internal flash: 128 Kb
+// 
+// Bootloader size: 16 Kb (I'd prefer 8 Kb but printf is taking up some space)
+// App size: (128 - 16) / 2 = 56 Kb
+// 
+// 0x00000 - 0x03FFF	Bootloader
+// 0x04000 - 0x11FFF	APP_1
+// 0x12000 - 0x1FFFF	APP_2
+//
+// We're treating the memory available in the V71 like it's the RH71, so only
+// the first 128 Kb. Number of pages to be erased using EPA is 4, 8, 16, or 32 -
+// however, only 16 and 32 are valid outside of the 8 Kb sectors. Since the
+// bootloader occupies the two 8 Kb sectors that means there is no use for the 4
+// and 8 page erase method.
+//
+// So, erase sizes are 8 Kb or 16 Kb. This means the 8 Kb (16 pages) needs to be
+// used to achieve the granularity needed to erase the app (56 Kb / 8 = 7 EPA);
+// the erase has to be aligned to the erase size (i.e. you can't erase an 8 Kb
+// chunk from an arbitrary start page, the start page must be on an 8 Kb
+// boundary).
+//
+// RH71 page size = 256 bytes
+// So, the memory regions defined in pages:
+// 0   - 63		Bootloader
+// 64  - 287	APP_1
+// 288 - 511	APP_2
+
+// Configuration per "app":
+// - page_start
+// - page_end
+// - => valid page range (for error handling)
+// - flash_offset (e.g. 0x4000)
+
+// NOTE: For now this just erases the first app
+// TODO: A better implementation might check that the page range isn't already erased
+int flash_erase_partition( uint32_t id )
+{
+	// TODO: Check that the page isn't already erased
+	
+	flash_partition_t partition;
+	if ( flash_get_partition( id, &partition ) < 0 ) {
+		return (-1); // Partition not found
+	}
+
+	// NOTE: This could be slightly more efficient if I used a more clever erase algorithm. Instead of doing 7 16-page erases I could do 2 32-page erases and then 3 16-page erases. I would need to compare the erase time - it might be constant time and in that case this improvement wouldn't really matter...
+	// 
+	// 16 pages (8 KB total)
+	// - ARG[15:4] = Page_Number / 16
+	// - FARG[3:2] = 0
+	uint32_t page;
+	uint32_t fsr;
+	uint32_t fcr;
+	for ( page = (partition.start / CONFIG_PAGE_SIZE); page < (partition.end / CONFIG_PAGE_SIZE); page += 16 ) {
+		// Wait for flash to be available
+		wait_fsr_frdy();
+
+		// Construct and issue command
+		fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD)
+			| HEFC_FCR_FCMD(HEFC_CMD_EPA)
+			| HEFC_FCR_FARG( HEFC_CMD_EPA_ARG((page & (~0xF)), HEFC_CMD_EPA_ARG_NP_16 ) );
+		HEFC_FCR = fcr;
+
+		// Wait for command to complete
+		fsr = wait_fsr_frdy();
+
+		// Check that the erase succeeded
+		if ( fsr & (HEFC_FSR_FCMDE | HEFC_FSR_FLOCKE | HEFC_FSR_FLERR) ) {
+			return (-fsr); // Some error occurred during the operation
+		}
 	}
 
 	return 0;
@@ -292,8 +376,19 @@ int flash_erase_app()
 
 // int write_page_buffer( frame_t * frame, uint8_t * page_buffer );
 // Must be a full page
-int flash_write_page( uint8_t * page_buffer, uint16_t page )
+int flash_write_page( uint32_t id, uint8_t * page_buffer, uint16_t page )
 {
+	flash_partition_t partition;
+	if ( flash_get_partition( id, &partition ) < 0 ) {
+		return (-1); // Partition not found
+	}
+
+	// Validate page argument
+	uint32_t page_offset = (page * CONFIG_PAGE_SIZE);
+	if ( page_offset >= partition.end ) {
+		return (-2); // Invalid page number
+	}
+
 	// There are probably alignment requirements for this sort of thing; I know
 	// from the datasheet that using DMA requires 32-bit alignment
 	//
@@ -305,20 +400,19 @@ int flash_write_page( uint8_t * page_buffer, uint16_t page )
 	// has been maintained. Thus, it should be valid to just copy 4 bytes of
 	// data at a time, assembling words in little-endian format (for ARM)...?
 
-	// Copy data from application page buffer into HEFC page; must be written in 4-byte chunks
-	// volatile uint32_t * app_start_addr = (volatile uint32_t *)0x10004000 + (page * CONFIG_PAGE_SIZE);
-	volatile uint32_t * app_start_addr = (volatile uint32_t *)0x10000000 + (page * CONFIG_PAGE_SIZE);
-	uint16_t i;
+	// NOTE: This assumes that the page_buffer pointer passed in aligned to 4-byte boundary
+	// TODO: Enforce alignment / assert alignment
+	uint32_t i;
+	volatile uint32_t * app_start_addr = (volatile uint32_t *)(partition.start + page_offset);
 	for ( i = 0; i < CONFIG_PAGE_SIZE; i += 4 ) {
-		// Write word
-		*app_start_addr = page_buffer[i] | (page_buffer[i+1] << 8)
-			 | (page_buffer[i+2] << 16) | (page_buffer[i+3] << 24);
+		*app_start_addr = *(uint32_t *)&page_buffer[i];
 
 		// Increment address
 		app_start_addr++;
 	}
 
 	// Synchronize pipeline
+	// TODO: Is the ISB necessary (?)
 	__ISB();
 	__DSB();
 
@@ -326,9 +420,10 @@ int flash_write_page( uint8_t * page_buffer, uint16_t page )
 	while ( ! ((fsr = HEFC_FSR) & HEFC_FSR_FRDY) );
 
 	// Commit page
-	uint32_t fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD) | HEFC_FCR_FCMD(HEFC_CMD_WP);
-	// fcr |= HEFC_FCR_FARG( (32 + page) ); // 
-	fcr |= HEFC_FCR_FARG( page ); // 
+	page += (partition.start / CONFIG_PAGE_SIZE);
+	volatile uint32_t fcr = HEFC_FCR_FKEY(HEFC_FCR_FKEY_PASSWD)
+		| HEFC_FCR_FCMD(HEFC_CMD_WP)
+		| HEFC_FCR_FARG( page );
 
 	// Write command to command register
 	HEFC_FCR = fcr;

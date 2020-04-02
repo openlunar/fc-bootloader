@@ -1,0 +1,4 @@
+
+# moon generated code ignores
+#/include/moon/services/
+#/common/moon/generated/

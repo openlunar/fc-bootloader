@@ -15,4 +15,7 @@ config SRAM_BASE_ADDRESS
 config SRAM_SIZE
 	default 768
 
-endif # SOC_SERIES_SAMV71
+config FLASH_SIZE
+	default 128
+
+endif # SOC_SERIES_SAMRH71

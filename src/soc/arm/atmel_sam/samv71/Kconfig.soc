@@ -25,4 +25,8 @@ config SRAM_BASE_ADDRESS
 config SRAM_SIZE
 	default 384
 
+# NOTE: Intentionally limiting this to match the RH71; the real value is 2048
+config FLASH_SIZE
+	default 128
+
 endif # SOC_SERIES_SAMV71

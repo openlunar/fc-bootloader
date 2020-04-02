@@ -15,9 +15,6 @@ static uint8_t sll_buffer_g[SLL_MAX_MSG_LEN];
 // Global page buffer
 static uint8_t page_buffer_g[CONFIG_PAGE_SIZE];
 
-// TODO:
-// - This internally should be split into a "command parsing" and "command execution" phase
-
 #ifdef CONFIG_RAM_BUILD
 int _write_ram( uint8_t * msg );
 #endif // CONFIG_RAM_BUILD

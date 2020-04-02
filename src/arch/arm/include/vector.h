@@ -30,6 +30,9 @@ typedef struct {
 
 void blocking_handler( void );
 void null_handler( void );
+void reset_handler();
+
+int main();
 
 #endif // VECTOR_H
 

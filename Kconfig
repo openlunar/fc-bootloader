@@ -6,14 +6,15 @@ menu "General Options"
 
 config BOOTLOADER_SIZE
 	int "FLASH reserved for bootloader"
-	default 8
+	default 16
 	help
 		This option specifies the amount of FLASH (measured in kB) reserved for
 		a bootloader image.
 
 config STACK_SIZE
 	int "Size of stack"
-	default 1024
+	#default 1024
+	default 4096
 	help
 		TBD
 

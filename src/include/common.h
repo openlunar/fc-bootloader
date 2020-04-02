@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-// TODO: Move the inline assembler arguments to an ARM header
+// TODO: (90) [refactor] @organization Move the inline assembler arguments to an ARM header
 
 __attribute__((always_inline)) static inline void __ISB(void)
 {

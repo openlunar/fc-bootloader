@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 
+#define CRC_16IBM_INIT_VALUE	0x0000
+
 #define CRC_32_INIT_VALUE	0xFFFFFFFFUL
 
 uint16_t crc_16ibm_update( uint16_t crc, uint8_t data );

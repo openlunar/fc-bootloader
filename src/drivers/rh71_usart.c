@@ -107,10 +107,11 @@ int usart_write( uint32_t id, uint8_t * data, uint32_t length )
 	return 0;
 }
 
-int usart_read( uint32_t id, uint8_t * data )
+int usart_read( uint32_t id, uint8_t * data, uint32_t flags )
 {
 	// Ignore for now
 	(void)id;
+	(void)flags;
 
 	// Is an error, data pointer is invalid
 	if ( ! data ) {
@@ -120,14 +121,20 @@ int usart_read( uint32_t id, uint8_t * data )
 	// NOTE: Ignoring OVRE for now - it will set when a character is received and RXRDY is already set; it overwrites the previous value
 
 	uint32_t csr = USART1_CSR;
+#if (USART_BLOCKING == 1)
 	while ( ! (csr & ( 1 << 0 /* RXRDY */)) ) {
 		csr = USART1_CSR;
 		// if ( csr  & (1 << 5 /* OVRE */) ) {
 		// 	__builtin_trap();
 		// }
 	}
+#else
+	if ( ! (csr & ( 1 << 0 /* RXRDY */)) ) {
+		return 0;
+	}
+#endif
 
 	*data = USART1_RHR;
 
-	return 0;
+	return 1;
 }

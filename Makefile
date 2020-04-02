@@ -37,18 +37,35 @@ link_script := ${builddir}/link.ld
 tgt_srcs := src/main.c
 tgt_srcs += src/common/sll.c
 tgt_srcs += src/common/crc.c
-tgt_srcs += src/common/command.c
+# tgt_srcs += src/common/command.c
+tgt_srcs += src/common/printf.c
+tgt_srcs += src/common/console.c
+tgt_srcs += src/common/system.c
+
+tgt_srcs += src/common/moon/server.c
+tgt_srcs += src/common/moon/codec.c
+tgt_srcs += src/common/moon/transport_usart.c
+
+tgt_srcs += src/common/services/bootloader.c
+
+tgt_srcs += src/common/moon/generated/services.c
+tgt_srcs += src/common/moon/generated/service_bootloader.c
 
 # Sources to be included based on target architecture (e.g. ARM)
 tgt_srcs += src/arch/arm/vector.c
 
+# Unified drivers
+tgt_srcs += src/drivers/x71_usart.c
+tgt_srcs += src/drivers/flash.c
+# tgt_srcs += src/drivers/x71_flash.c
+
 # Sources to be included based on target processor (e.g. SAMV71)
 tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_flash.c
-tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_usart.c
+# tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_usart.c
 tgt_srcs-${CONFIG_SOC_SERIES_SAMRH71} += src/drivers/rh71_watchdog.c
 
 tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_flash.c
-tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_usart.c
+# tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_usart.c
 tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_watchdog.c
 
 tgt_srcs += ${tgt_srcs-y}
@@ -69,6 +86,7 @@ tgt_srcs += ${tgt_srcs-y}
 tgt_cppflags := -g
 tgt_cppflags += -Wall -Wextra
 tgt_cppflags += -O3
+# tgt_cppflags += -O0
 # tgt_cppflags += -Os
 tgt_cppflags += -I src/include -I $(dir ${config_hdr_file})
 # Architecture include path
@@ -79,6 +97,7 @@ tgt_cppflags += -fno-builtin-memcpy -fno-builtin-memset
 # tgt_cppflags += -O0
 # tgt_cppflags += -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-sp-d16
 tgt_cppflags += -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp -mfpu=fpv5-sp-d16
+tgt_cppflags += -DPRINTF_INCLUDE_CONFIG_H
 tgt_cflags   := 
 tgt_ldflags  := -T ${link_script}
 tgt_ldflags  += -nostdlib

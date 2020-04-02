@@ -1,0 +1,33 @@
+
+// @max_message_len(64)
+
+// Some sort of attribute to control enum size policy; probably defaults to MIN_SIZE; want to ability to set size on wire but expand to natural type on other size (e.g. int32_t on 32-bit architecture, or whatever the gcc default underlying type is). Could be useful to be able to control both. But really I just want it to "do what makes sense" which is small on wire and expand to natural size at server
+// @enum(MIN_SIZE)
+
+enum BootAction {
+	BOOT_NONE = 0,
+	BOOT_APP_1,
+	BOOT_APP_2,
+	BOOT_BOOTLOADER = 0xFF // NOTE: Only supported by special builds
+}
+
+enum AppId {
+	APP_1 = 0,
+	APP_2,
+	BOOTLOADER = 0xFF // NOTE: Only supported by special builds
+}
+
+// Note: u16 for page buffer offset is because V71 has a 512-byte page
+@id(1) interface Bootloader {
+	@id(1) bl_ping () -> void;
+	@id(2) bl_writePageBuffer ( uint16 offset, uint8 data_len, list<uint8> data @max_length(32) @length(data_len) ) -> int8;
+	@id(3) bl_erasePageBuffer () -> void;
+	@id(4) bl_eraseApp ( AppId app_id ) -> int8;
+	// TODO: Hmm. Now that I've made this argument specific to the app I need to pass in the app...
+	@id(5) bl_writePage ( AppId app_id, uint16 page_no, uint32 crc ) -> int8;
+	// @id(6) bl_lockApp ( AppId app_id ) -> void;
+	// @id(7) bl_unlockApp ( AppId app_id ) -> void;
+	@id(8) bl_setBootAction ( BootAction action ) -> int8;
+
+	//getTelemetry () -> ();
+}

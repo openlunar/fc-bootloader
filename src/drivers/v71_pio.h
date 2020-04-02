@@ -20,6 +20,16 @@
 #define PIO_ABCDSR1(port) 		MMIO32((port) + 0x70)
 #define PIO_ABCDSR2(port) 		MMIO32((port) + 0x74)
 
+// [2:1]
+#define PIO_ACBDSR_PERIPH_A		0x0 // 00
+#define PIO_ACBDSR_PERIPH_B		0x1 // 01
+#define PIO_ACBDSR_PERIPH_C		0x2 // 10
+#define PIO_ACBDSR_PERIPH_D		0x3 // 11
+
+#define PIO_ABCDSR(port,pin,func) \
+	PIO_ABCDSR1(port) |= ((func & 0x1) << pin); \
+	PIO_ABCDSR2(port) |= (((func & 0x2) >> 1) << pin)
+
 // #define PIOA_PER	PIO_PER(PIOA_BASE)
 #define PIOA_OER		PIO_OER(PIOA_BASE)
 #define PIOA_PDR		PIO_PDR(PIOA_BASE)

@@ -211,6 +211,45 @@ int flash_init()
 	return 0;
 }
 
+// Ok, memory layout:
+// - Designed for SAMRH71 (smallest internal flash)
+// - Internal flash: 128 Kb
+// 
+// Bootloader size: 16 Kb (I'd prefer 8 Kb but printf is taking up some space)
+// App size: (128 - 16) / 2 = 56 Kb
+// 
+// 0x00000 - 0x03FFF	Bootloader
+// 0x04000 - 0x11FFF	APP_1
+// 0x12000 - 0x1FFFF	APP_2
+//
+// We're treating the memory available in the V71 like it's the RH71, so only
+// the first 128 Kb. Number of pages to be erased using EPA is 4, 8, 16, or 32 -
+// however, only 16 and 32 are valid outside of the 8 Kb sectors. Since the
+// bootloader occupies the two 8 Kb sectors that means there is no use for the 4
+// and 8 page erase method.
+//
+// So, erase sizes are 8 Kb or 16 Kb. This means the 8 Kb (16 pages) needs to be
+// used to achieve the granularity needed to erase the app (56 Kb / 8 = 7 EPA);
+// the erase has to be aligned to the erase size (i.e. you can't erase an 8 Kb
+// chunk from an arbitrary start page, the start page must be on an 8 Kb
+// boundary).
+//
+// V71 page size = 512 bytes
+// So, the memory regions defined in pages:
+// 0   - 31		Bootloader
+// 32  - 143	APP_1
+// 144 - 255	APP_2
+
+// TODO: Probably want a timeout and to indicate an error if it times out
+// Blocking wait for FSR
+inline uint32_t wait_fsr_frdy() {
+	uint32_t fsr;
+	while ( ! ((fsr = EEFC_FSR) & EEFC_FSR_FRDY) );
+	return fsr;
+}
+
+// NOTE: For now this just erases the first app
+// TODO: A better implementation might check that the page range isn't already erased
 int flash_erase_app()
 {
 	// TODO: Check that the page isn't already erased
@@ -223,39 +262,69 @@ int flash_erase_app()
 	// (start page = 32, erase 16 pages (smallest size available for 128 KB
 	// sectors))
 
-	// Issue the erase sector command
-	// eefc_cmd_epa( 32, EEFC_CMD_EPA_FARG_NP_16 );
-	// eefc_command( EEFC_CMD_ES,  );
-	uint32_t fcr = EEFC_FCR_FKEY(EEFC_FCR_FKEY_PASSWD) | EEFC_FCR_FCMD(EEFC_CMD_EPA);
-	// Ahhhhh. I'll probably want a function or macro that does the proper division based on *_NP_* argument, e.g. NP_16 divides page number by 16, the actual argument is in [15:3]
-	fcr |= EEFC_FCR_FARG( EEFC_CMD_EPA_ARG((2 << 2), EEFC_CMD_EPA_ARG_NP_16 ) );
 
-	// This should be checking the FRDY bit *before* executing a command
-	// The command execution flow chart should probably be implemented in the eefc_command() (or per-command) function
-
-	// Write command to command register
-	EEFC_FCR = fcr;
-
-	// Wait for erase to complete (EEFC_FSR.FRDY)
+	// NOTE: This could be slightly more efficient if I used a more clever erase algorithm. Instead of doing 7 16-page erases I could do 2 32-page erases and then 3 16-page erases. I would need to compare the erase time - it might be constant time and in that case this improvement wouldn't really matter...
+	// 
+	// 16 pages (8 KB total)
+	// - ARG[15:4] = Page_Number / 16
+	// - FARG[3:2] = 0
+	uint32_t page;
 	uint32_t fsr;
-	while ( ! ((fsr = EEFC_FSR) & EEFC_FSR_FRDY) );
+	uint32_t fcr;
+	for ( page = 32; page < 144; page += 16 ) {
+		// Wait for flash to be available
+		wait_fsr_frdy();
 
-	// fsr &= (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR);
-	if ( fsr & (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR) ) {
-		return (-fsr); // Some error occurred during the operation
+		// Construct and issue command
+		fcr = EEFC_FCR_FKEY(EEFC_FCR_FKEY_PASSWD)
+			| EEFC_FCR_FCMD(EEFC_CMD_EPA)
+			| EEFC_FCR_FARG( EEFC_CMD_EPA_ARG((page & (~0xF)), EEFC_CMD_EPA_ARG_NP_16 ) );
+		EEFC_FCR = fcr;
+
+		// Wait for command to complete
+		fsr = wait_fsr_frdy();
+
+		// Check that the erase succeeded
+		if ( fsr & (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR) ) {
+			return (-fsr); // Some error occurred during the operation
+		}
 	}
 
 	return 0;
+
+	// // Issue the erase sector command
+	// // eefc_cmd_epa( 32, EEFC_CMD_EPA_FARG_NP_16 );
+	// // eefc_command( EEFC_CMD_ES,  );
+	// uint32_t fcr = EEFC_FCR_FKEY(EEFC_FCR_FKEY_PASSWD) | EEFC_FCR_FCMD(EEFC_CMD_EPA);
+	// // Ahhhhh. I'll probably want a function or macro that does the proper division based on *_NP_* argument, e.g. NP_16 divides page number by 16, the actual argument is in [15:3]
+	// fcr |= EEFC_FCR_FARG( EEFC_CMD_EPA_ARG((2 << 2), EEFC_CMD_EPA_ARG_NP_16 ) );
+
+	// // This should be checking the FRDY bit *before* executing a command
+	// // The command execution flow chart should probably be implemented in the eefc_command() (or per-command) function
+
+	// // Write command to command register
+	// EEFC_FCR = fcr;
+
+	// // Wait for erase to complete (EEFC_FSR.FRDY)
+	// uint32_t fsr;
+	// while ( ! ((fsr = EEFC_FSR) & EEFC_FSR_FRDY) );
+
+	// // fsr &= (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR);
+	// if ( fsr & (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR) ) {
+	// 	return (-fsr); // Some error occurred during the operation
+	// }
+
+	// return 0;
 }
 
-int flash_erase_range( uint16_t page_start, uint16_t page_end )
-{
-	(void)page_start;
-	(void)page_end;
+// int flash_erase_range( uint16_t page_start, uint16_t page_end )
+// {
+// 	(void)page_start;
+// 	(void)page_end;
 
-	// NOT IMPLEMENTED
-	return (-1);
-}
+// 	// NOT IMPLEMENTED
+// 	return (-1);
+// }
 
 // int write_page_buffer( frame_t * frame, uint8_t * page_buffer );
 // Must be a full page
@@ -273,18 +342,35 @@ int flash_write_page( uint8_t * page_buffer, uint16_t page )
 	// data at a time, assembling words in little-endian format (for ARM)...?
 
 	// Copy data from application page buffer into EEFC page; must be written in 4-byte chunks
-	volatile uint32_t * app_start_addr = (volatile uint32_t *)0x00404000 + (page * CONFIG_PAGE_SIZE);
-	uint16_t i;
+	// volatile uint32_t * app_start_addr = (volatile uint32_t *)0x00404000 + (page * CONFIG_PAGE_SIZE);
+	// uint16_t i;
+	// for ( i = 0; i < CONFIG_PAGE_SIZE; i += 4 ) {
+	// 	// Write word
+	// 	*app_start_addr = page_buffer[i] | (page_buffer[i+1] << 8)
+	// 		 | (page_buffer[i+2] << 16) | (page_buffer[i+3] << 24);
+
+	// 	// Increment address
+	// 	app_start_addr++;
+	// }
+
+	// NOTE: This assumes that the page_buffer pointer passed in aligned to 4-byte boundary
+	// TODO: Enforce alignment / assert alignment
+	// TODO: (2) [refactor] @magic Replace 0x4000 with constant for app offset (in bytes)
+	uint32_t i;
+	volatile uint32_t * app_start_addr = (volatile uint32_t *)(CONFIG_FLASH_BASE_ADDRESS + 0x4000 + (page * CONFIG_PAGE_SIZE));
 	for ( i = 0; i < CONFIG_PAGE_SIZE; i += 4 ) {
-		// Write word
-		*app_start_addr = page_buffer[i] | (page_buffer[i+1] << 8)
-			 | (page_buffer[i+2] << 16) | (page_buffer[i+3] << 24);
+		*app_start_addr = *(uint32_t *)&page_buffer[i];
 
 		// Increment address
 		app_start_addr++;
 	}
 
+	// Synchronize pipeline
+	__ISB();
+	__DSB();
+
 	// Commit page
+	// TODO: (2) [refactor] @magic Replace 2 with constant for app offset (in pages)
 	uint32_t fcr = EEFC_FCR_FKEY(EEFC_FCR_FKEY_PASSWD) | EEFC_FCR_FCMD(EEFC_CMD_WP);
 	fcr |= EEFC_FCR_FARG( (32 + page) ); // 
 

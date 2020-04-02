@@ -22,6 +22,11 @@ config FLASH_BASE_ADDRESS
 	help
 		"xxx"
 
+config FLASH_SIZE
+	int "FLASH size in kB"
+	help
+		"xxx"
+
 config SRAM_BASE_ADDRESS
 	hex "SRAM base address"
 	help

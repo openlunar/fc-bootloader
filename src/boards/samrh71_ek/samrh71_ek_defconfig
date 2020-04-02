@@ -2,3 +2,5 @@
 # CONFIG_BOARD_SAM_RH71_EK=y
 # This configuration option needs to be set by the above one being set
 CONFIG_SOC_SERIES_SAMRH71=y
+
+CONFIG_RAM_BUILD=y
