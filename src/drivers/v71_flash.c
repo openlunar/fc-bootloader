@@ -250,9 +250,14 @@ inline uint32_t wait_fsr_frdy() {
 
 // NOTE: For now this just erases the first app
 // TODO: A better implementation might check that the page range isn't already erased
-int flash_erase_app()
+int flash_erase_partition( uint32_t id )
 {
 	// TODO: Check that the page isn't already erased
+
+	flash_partition_t partition;
+	if ( flash_get_partition( id, &partition ) < 0 ) {
+		return (-1); // Partition not found
+	}
 
 	// The app is located at 0x00404000 (0x4000) and is 0x1000 bytes (4 KB)
 	// App start sector : 0
@@ -271,7 +276,7 @@ int flash_erase_app()
 	uint32_t page;
 	uint32_t fsr;
 	uint32_t fcr;
-	for ( page = 32; page < 144; page += 16 ) {
+	for ( page = (partition.start / CONFIG_PAGE_SIZE); page < (partition.end / CONFIG_PAGE_SIZE); page += 16 ) {
 		// Wait for flash to be available
 		wait_fsr_frdy();
 
@@ -291,30 +296,6 @@ int flash_erase_app()
 	}
 
 	return 0;
-
-	// // Issue the erase sector command
-	// // eefc_cmd_epa( 32, EEFC_CMD_EPA_FARG_NP_16 );
-	// // eefc_command( EEFC_CMD_ES,  );
-	// uint32_t fcr = EEFC_FCR_FKEY(EEFC_FCR_FKEY_PASSWD) | EEFC_FCR_FCMD(EEFC_CMD_EPA);
-	// // Ahhhhh. I'll probably want a function or macro that does the proper division based on *_NP_* argument, e.g. NP_16 divides page number by 16, the actual argument is in [15:3]
-	// fcr |= EEFC_FCR_FARG( EEFC_CMD_EPA_ARG((2 << 2), EEFC_CMD_EPA_ARG_NP_16 ) );
-
-	// // This should be checking the FRDY bit *before* executing a command
-	// // The command execution flow chart should probably be implemented in the eefc_command() (or per-command) function
-
-	// // Write command to command register
-	// EEFC_FCR = fcr;
-
-	// // Wait for erase to complete (EEFC_FSR.FRDY)
-	// uint32_t fsr;
-	// while ( ! ((fsr = EEFC_FSR) & EEFC_FSR_FRDY) );
-
-	// // fsr &= (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR);
-	// if ( fsr & (EEFC_FSR_FCMDE | EEFC_FSR_FLOCKE | EEFC_FSR_FLERR) ) {
-	// 	return (-fsr); // Some error occurred during the operation
-	// }
-
-	// return 0;
 }
 
 // int flash_erase_range( uint16_t page_start, uint16_t page_end )
@@ -328,8 +309,19 @@ int flash_erase_app()
 
 // int write_page_buffer( frame_t * frame, uint8_t * page_buffer );
 // Must be a full page
-int flash_write_page( uint8_t * page_buffer, uint16_t page )
+int flash_write_page( uint32_t id, uint8_t * page_buffer, uint16_t page )
 {
+	flash_partition_t partition;
+	if ( flash_get_partition( id, &partition ) < 0 ) {
+		return (-1); // Partition not found
+	}
+
+	// Validate page argument
+	uint32_t page_offset = (page * CONFIG_PAGE_SIZE);
+	if ( page_offset >= partition.end ) {
+		return (-2); // Invalid page number
+	}
+
 	// There are probably alignment requirements for this sort of thing; I know
 	// from the datasheet that using DMA requires 32-bit alignment
 	//
@@ -357,7 +349,7 @@ int flash_write_page( uint8_t * page_buffer, uint16_t page )
 	// TODO: Enforce alignment / assert alignment
 	// TODO: (2) [refactor] @magic Replace 0x4000 with constant for app offset (in bytes)
 	uint32_t i;
-	volatile uint32_t * app_start_addr = (volatile uint32_t *)(CONFIG_FLASH_BASE_ADDRESS + 0x4000 + (page * CONFIG_PAGE_SIZE));
+	volatile uint32_t * app_start_addr = (volatile uint32_t *)(partition.start + page_offset);
 	for ( i = 0; i < CONFIG_PAGE_SIZE; i += 4 ) {
 		*app_start_addr = *(uint32_t *)&page_buffer[i];
 
