@@ -3,4 +3,4 @@
 # This configuration option needs to be set by the above one being set
 CONFIG_SOC_SERIES_SAMRH71=y
 
-CONFIG_RAM_BUILD=y
+# CONFIG_RAM_BUILD=y

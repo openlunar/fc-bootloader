@@ -37,7 +37,6 @@ link_script := ${builddir}/link.ld
 tgt_srcs := src/main.c
 tgt_srcs += src/common/sll.c
 tgt_srcs += src/common/crc.c
-# tgt_srcs += src/common/command.c
 tgt_srcs += src/common/printf.c
 tgt_srcs += src/common/console.c
 tgt_srcs += src/common/system.c
@@ -68,18 +67,8 @@ tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_flash.c
 # tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_usart.c
 tgt_srcs-${CONFIG_SOC_SERIES_SAMV71} += src/drivers/v71_watchdog.c
 
+# Add CONFIG sources to main sources list
 tgt_srcs += ${tgt_srcs-y}
-
-# tgt_srcs-${CONFIG_SOC_RH71} += src/drivers/rh71_usart.c
-# $(call tgt_src_ifdef, CONFIG_SOC_RH71, src/drivers/rh71_usart.c)
-# # This maybe also has to be eval'd (?) I don't remember, if it does then this is going to be a hassle
-# define tgt_src_ifdef
-# if defined(${1})
-#   tgt_srcs += ${2}
-# endef
-
-# Sources to be included based on target board (e.g. SAMRH71-EK)
-# ...
 
 # NOTE: Need to add rule to generate '${builddir}/src/include/generated' (depdir dependency for rule that generates the contents of this folder)
 
@@ -168,7 +157,7 @@ ${objdir}/%.o : %.c
 #       to a program which might be confused by the linemarkers.
 #   -x  Specify explicitly the language for hte following input files
 
-${link_script}: tools/atsamv71q21_bl.ld ${config_hdr_file}
+${link_script}: tools/atsamx71_bl.ld ${config_hdr_file}
 	${quiet_cpp}$(strip ${CPP} -E -P -x assembler-with-cpp ${CPPFLAGS} ${tgt_cppflags} $< -o $@)
 
 # Linker script base uses config.h
