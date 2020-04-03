@@ -28,20 +28,24 @@ Flight Computer bootloader developed for the [SAMRH71](https://www.microchip.com
 To support multiple targets and various configurations (development / debug / production) this project uses Kconfig. To configure the build for a specific board:
 
 ```bash
-$ make <board>_defconfig
+# <board> = (e.g.) samv71_xult_ek or samrh71_ek
+$ meson <build-dir> --cross-file tools/meson/gcc-arm-cortex-m7.txt -Dboard=<board>
 ```
 
 Currently supported targets:
 
 - [Atmel SAMRH71](https://www.microchip.com/wwwproducts/en/SAMRH71)
-	+ `samrh71_ek_defconfig` : [SAMRH71F20-EK](https://www.microchip.com/DevelopmentTools/ProductDetails/PartNO/SAMRH71F20-EK)
+	+ `samrh71_ek` : [SAMRH71F20-EK](https://www.microchip.com/DevelopmentTools/ProductDetails/PartNO/SAMRH71F20-EK)
 - [Atmel SAMV71Q21](https://www.microchip.com/wwwproducts/en/ATSAMV71Q21)
-	+ `samv71_xult_ek_defconfig` : [SAM V71 Xplained Ultra](https://www.microchip.com/DevelopmentTools/ProductDetails/PartNO/ATSAMV71-XULT)
+	+ `samv71_xult_ek` : [SAM V71 Xplained Ultra](https://www.microchip.com/DevelopmentTools/ProductDetails/PartNO/ATSAMV71-XULT)
 
 ### Compile
 
 ```bash
-$ make
+$ ninja -C <build-dir>
+# or
+$ cd <build-dir>
+$ ninja
 ```
 
 This will generate `bin/bootloader.elf`.

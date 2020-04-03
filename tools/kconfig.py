@@ -41,6 +41,8 @@ def main():
 		kconf.warn_assign_override = False
 		kconf.warn_assign_redun = False
 
+	# Not all of the files in args.configs_in are guaranteed to exist; checking for file existence has been pushed to this script (meson doesn't seem to have an easy way to handle "this file might exist, don't worry if it doesn't", which I guess makes sense, you want a nice linear tree)
+
 	# Load configuration files
 	print(kconf.load_config(args.configs_in[0]))
 	for config in args.configs_in[1:]:
@@ -85,7 +87,7 @@ def main():
 
 	# Write the merged configuration and the C header
 	print(kconf.write_config(args.config_out))
-	print(kconf.write_autoconf(args.header_out))
+	# print(kconf.write_autoconf(args.header_out))
 
 	# # Write the list of parsed Kconfig files to a file
 	# write_kconfig_filenames(kconf, args.kconfig_list_out)
@@ -233,8 +235,8 @@ def parse_args():
 						help="Top-level Kconfig file")
 	parser.add_argument("config_out",
 						help="Output configuration file")
-	parser.add_argument("header_out",
-						help="Output header file")
+	# parser.add_argument("header_out",
+	# 					help="Output header file")
 	# parser.add_argument("kconfig_list_out",
 	# 					help="Output file for list of parsed Kconfig files")
 	parser.add_argument("configs_in",

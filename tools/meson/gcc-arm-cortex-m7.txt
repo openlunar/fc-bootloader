@@ -1,0 +1,33 @@
+# Meson Cross-compilation File for GCC ARM Builds
+# Requires that arm-none-eabi-* is found in your PATH
+# For more information: http://mesonbuild.com/Cross-compilation.html
+
+[binaries]
+c = 'arm-none-eabi-gcc'
+cpp = 'arm-none-eabi-c++'
+pp = 'arm-none-eabi-cpp'
+ar = 'arm-none-eabi-ar'
+strip = 'arm-none-eabi-strip'
+ld = 'arm-none-eabi-ld'
+objcopy = 'arm-none-eabi-objcopy'
+objdump = 'arm-none-eabi-objdump'
+
+# Not Used:
+#	pkgconfig
+#	exe_wrapper
+
+[properties]
+# TODO: I...haven't decided how to pass all ofthese in yet.
+c_args = [ '-mcpu=cortex-m7', '-mfloat-abi=softfp', '-mfpu=fpv4-sp-d16' ]
+c_link_args = [ '-mcpu=cortex-m7', '-mfloat-abi=softfp', '-mfpu=fpv4-sp-d16' ]
+cpp_args = [ '-mcpu=cortex-m7', '-mfloat-abi=softfp', '-mfpu=fpv4-sp-d16' ]
+cpp_link_args = [ '-mcpu=cortex-m7', '-mfloat-abi=softfp', '-mfpu=fpv4-sp-d16' ]
+
+# Keep this set, or the sanity check won't pass
+needs_exe_wrapper = true
+
+[host_machine]
+system = 'none'
+cpu_family = 'arm'
+cpu = 'cortex-m7'
+endian = 'little'

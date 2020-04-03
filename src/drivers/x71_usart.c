@@ -13,12 +13,12 @@
 #define USART_THR_OFFSET	0x1C
 #define USART_BRGR_OFFSET	0x20
 
-inline uint32_t __usart_getreg( volatile uint32_t base, uint32_t offset )
+static inline uint32_t __usart_getreg( volatile uint32_t base, uint32_t offset )
 {
 	return (*(volatile uint32_t *)(base + offset));
 }
 
-inline void __usart_setreg( volatile uint32_t base, uint32_t offset, uint32_t value )
+static inline void __usart_setreg( volatile uint32_t base, uint32_t offset, uint32_t value )
 {
 	*(volatile uint32_t *)(base + offset) = (value);
 }

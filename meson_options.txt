@@ -1,0 +1,8 @@
+# Rather than use environment variables to store build options (e.g. BOARD), options that must be specified outside of Kconfig for sanity / stability are stored in meson options. This also allows having multiple, disparate build directories (e.g. maintaining multiple board build directories).
+
+option(
+	'board',
+	type: 'string',
+	value: 'sandbox',
+	description: 'Board definition to use: samrh71_ek, samv71_ek, sandbox, ...'
+)

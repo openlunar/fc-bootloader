@@ -242,7 +242,7 @@ int flash_init()
 
 // TODO: Probably want a timeout and to indicate an error if it times out
 // Blocking wait for FSR
-inline uint32_t wait_fsr_frdy() {
+static inline uint32_t wait_fsr_frdy() {
 	uint32_t fsr;
 	while ( ! ((fsr = EEFC_FSR) & EEFC_FSR_FRDY) );
 	return fsr;

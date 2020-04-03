@@ -292,7 +292,7 @@ int flash_erase_range( uint16_t page_start, uint16_t page_end )
 
 // TODO: Probably want a timeout and to indicate an error if it times out
 // Blocking wait for FSR
-inline uint32_t wait_fsr_frdy() {
+static inline uint32_t wait_fsr_frdy() {
 	uint32_t fsr;
 	while ( ! ((fsr = HEFC_FSR) & HEFC_FSR_FRDY) );
 	return fsr;
