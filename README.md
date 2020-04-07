@@ -18,9 +18,9 @@ Flight Computer bootloader developed for the [SAMRH71](https://www.microchip.com
 
 *Note: Currently the development environment is Linux only.*
 
-- Python 3
-- TODO: ARM tool chain
-- make
+- Python 3 (see tools/requirements.txt)
+- ARM tool chain (version used during development: `arm-none-eabi-gcc (GNU Tools for Arm Embedded Processors 7-2017-q4-major) 7.2.1 20170904 (release) [ARM/embedded-7-branch revision 255204]`)
+- [meson](https://github.com/mesonbuild/meson/)
 - opneocd
 
 ### Configuration
@@ -69,22 +69,6 @@ $ arm-none-eabi-gdb bin/bootloader.elf
 (gdb) quit
 ```
 
-#### SAMRH71 EK
-
-...
-
-### Debug
-
-...
-
-## Project Structure
-
-...
-
-## Contributing
-
-...
-
 ## The MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -104,65 +88,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-## README TODO
-
-- RH71 deploy example
-	+ Supporting the Atmel ICE
-	+ Custom openocd config file
-- Debug notes
-	+ Supporting the Atmel ICE with V71 (selecting USB device)
-- Fill out sections: Project Structure, Contributing, ...
-
----
-
-Old config (removing this soon).
-
-## Requirements
-
-* Python 3
-* Usb or debugger connection to either the ATSAMV71 Xplained board, or the ATSAMV71RH Eval board
-
-## Setup
-
-```bash
-pip3 install tools/requirements.txt
-sudo apt-get install gcc-arm-none-eabi
-sudo apt install openocd gdb-multiarch
-```
-
-## How do I use it?
-
-git and make
-
-
-## Configuration
-
-
-### Compiler
-
-something arm eabi some version
-
-
-### Makefile
-
-clean
-	make clean
-
-config file for ATSAMV71 Xplained board
-	make samv71_xult_ek_defconfig
-or
-config file for ATSAMV71RH Eval board
-	make samrh71_ek_defconfig
-
-build:
-	make
-
-start openocd server thing:
-	openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg
-
-separate terminal:
-	gdb-multiarch bin/bootloader.elf
-
-separate terminal:
-	#here goes python terminal startup
