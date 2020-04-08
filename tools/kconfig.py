@@ -1,13 +1,30 @@
 #!/usr/bin/env python3
 
-# Writes/updates the zephyr/.config configuration file by merging configuration
-# files passed as arguments, e.g. board *_defconfig and application prj.conf
-# files.
+# This file adapted from Zephyr RTOS 'kconfig.py'. The Zephyr project is
+# licensed under the Apache 2.0 license, reproduced below:
 #
-# When fragments haven't changed, zephyr/.config is both the input and the
-# output, which just updates it. This is handled in the CMake files.
+# ---
 #
-# Also does various checks (most via Kconfiglib warnings).
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
+# ---
+#
+# Does various checks (most via Kconfiglib warnings).
+#
+# TODO:
+#
+# - Check if '.config' it self has been updated; if so, apply its changes in the
+#   config set
 
 import argparse
 import os
